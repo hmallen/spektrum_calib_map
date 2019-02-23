@@ -1,3 +1,8 @@
+/*
+   To Do:
+   - Save calibration values to (and load from EEPROM)
+*/
+
 #include <CPPM.h>
 
 #define UPDATE_TIMEOUT_SEC 10
@@ -19,6 +24,7 @@ int aux1Max = -9999;
 
 unsigned long updateLast;
 const unsigned long updateTimeout = UPDATE_TIMEOUT_SEC * 1000;
+bool calibrationComplete = false;
 
 void cppm_cycle(void) {
   if (CPPM.synchronized()) {
@@ -45,86 +51,88 @@ void cppm_cycle(void) {
       Serial.print(aux1); Serial.print("\n");
       Serial.flush();*/
 
-    bool updatePerformed = false;
+    if (!calibrationComplete) {
+      bool updatePerformed = false;
 
-    /*aileMin = min(aile, aileMin);
-      aileMax = max(aile, aileMax);
-      elevMin = min(elev, elevMin);
-      elevMax = max(elev, elevMax);
-      throMin = min(thro, throMin);
-      throMax = max(thro, throMax);
-      ruddMin = min(rudd, ruddMin);
-      ruddMax = max(rudd, ruddMax);
-      gearMin = min(gear, gearMin);
-      gearMax = max(gear, gearMax);
-      aux1Min = min(aux1, aux1Min);
-      aux1Max = max(aux1, aux1Max);*/
+      /*aileMin = min(aile, aileMin);
+        aileMax = max(aile, aileMax);
+        elevMin = min(elev, elevMin);
+        elevMax = max(elev, elevMax);
+        throMin = min(thro, throMin);
+        throMax = max(thro, throMax);
+        ruddMin = min(rudd, ruddMin);
+        ruddMax = max(rudd, ruddMax);
+        gearMin = min(gear, gearMin);
+        gearMax = max(gear, gearMax);
+        aux1Min = min(aux1, aux1Min);
+        aux1Max = max(aux1, aux1Max);*/
 
-    // Aileron
-    if (aile < aileMin) {
-      aileMin = aile;
-      updatePerformed = true;
-    }
-    else if (aile > aileMax) {
-      aileMax = aile;
-      updatePerformed = true;
-    }
-    // Elevator
-    if (elev < elevMin) {
-      elevMin = elev;
-      updatePerformed = true;
-    }
-    else if (elev > elevMax) {
-      elevMax = elev;
-      updatePerformed = true;
-    }
-    // Throttle
-    if (thro < throMin) {
-      throMin = thro;
-      updatePerformed = true;
-    }
-    else if (thro > throMax) {
-      throMax = thro;
-      updatePerformed = true;
-    }
-    // Rudder
-    if (rudd < ruddMin) {
-      ruddMin = rudd;
-      updatePerformed = true;
-    }
-    else if (rudd > ruddMax) {
-      ruddMax = rudd;
-      updatePerformed = true;
-    }
-    // Gear
-    if (gear < gearMin) {
-      gearMin = gear;
-      updatePerformed = true;
-    }
-    else if (gear > gearMax) {
-      gearMax = gear;
-      updatePerformed = true;
-    }
-    // Aux1
-    if (aux1 < aux1Min) {
-      aux1Min = aux1;
-      updatePerformed = true;
-    }
-    else if (aux1 > aux1Max) {
-      aux1Max = aux1;
-      updatePerformed = true;
-    }
+      // Aileron
+      if (aile < aileMin) {
+        aileMin = aile;
+        updatePerformed = true;
+      }
+      else if (aile > aileMax) {
+        aileMax = aile;
+        updatePerformed = true;
+      }
+      // Elevator
+      if (elev < elevMin) {
+        elevMin = elev;
+        updatePerformed = true;
+      }
+      else if (elev > elevMax) {
+        elevMax = elev;
+        updatePerformed = true;
+      }
+      // Throttle
+      if (thro < throMin) {
+        throMin = thro;
+        updatePerformed = true;
+      }
+      else if (thro > throMax) {
+        throMax = thro;
+        updatePerformed = true;
+      }
+      // Rudder
+      if (rudd < ruddMin) {
+        ruddMin = rudd;
+        updatePerformed = true;
+      }
+      else if (rudd > ruddMax) {
+        ruddMax = rudd;
+        updatePerformed = true;
+      }
+      // Gear
+      if (gear < gearMin) {
+        gearMin = gear;
+        updatePerformed = true;
+      }
+      else if (gear > gearMax) {
+        gearMax = gear;
+        updatePerformed = true;
+      }
+      // Aux1
+      if (aux1 < aux1Min) {
+        aux1Min = aux1;
+        updatePerformed = true;
+      }
+      else if (aux1 > aux1Max) {
+        aux1Max = aux1;
+        updatePerformed = true;
+      }
 
-    if (updatePerformed) {
-      updateLast = millis();
+      if (updatePerformed) {
+        updateLast = millis();
 
-      Serial.print(F("Aileron:  ")); Serial.print(aileMin); Serial.print(F(" | ")); Serial.println(aileMax);
-      Serial.print(F("Elevator: ")); Serial.print(elevMin); Serial.print(F(" | ")); Serial.println(elevMax);
-      Serial.print(F("Throttle: ")); Serial.print(throMin); Serial.print(F(" | ")); Serial.println(throMax);
-      Serial.print(F("Rudder:   ")); Serial.print(ruddMin); Serial.print(F(" | ")); Serial.println(ruddMax);
-      Serial.print(F("Gear:     ")); Serial.print(gearMin); Serial.print(F(" | ")); Serial.println(gearMax);
-      Serial.print(F("Aux1:     ")); Serial.print(aux1Min); Serial.print(F(" | ")); Serial.println(aux1Max);
-      Serial.flush();
+        Serial.print(F("Aileron:  ")); Serial.print(aileMin); Serial.print(F(" | ")); Serial.println(aileMax);
+        Serial.print(F("Elevator: ")); Serial.print(elevMin); Serial.print(F(" | ")); Serial.println(elevMax);
+        Serial.print(F("Throttle: ")); Serial.print(throMin); Serial.print(F(" | ")); Serial.println(throMax);
+        Serial.print(F("Rudder:   ")); Serial.print(ruddMin); Serial.print(F(" | ")); Serial.println(ruddMax);
+        Serial.print(F("Gear:     ")); Serial.print(gearMin); Serial.print(F(" | ")); Serial.println(gearMax);
+        Serial.print(F("Aux1:     ")); Serial.print(aux1Min); Serial.print(F(" | ")); Serial.println(aux1Max);
+        Serial.flush();
+      }
     }
   }
 
@@ -160,6 +168,8 @@ void setup() {
   int gearMid = (gearMin + gearMax) / 2;
   int aux1Mid = (aux1Min + aux1Max) / 2;
 
+  calibrationComplete = true;
+
   Serial.println(F("            Min - Mid - Max"));
   // Aileron
   Serial.print(F("Aileron:  "));
@@ -191,7 +201,10 @@ void setup() {
   Serial.print(aux1Min); Serial.print(F(" - "));
   Serial.print(aux1Mid); Serial.print(F(" - "));
   Serial.println(aux1Max);
+
+  Serial.println(F("Beginning output of mapped values (-100 <--> 100)."));
 }
 
 void loop() {
+  //
 }
