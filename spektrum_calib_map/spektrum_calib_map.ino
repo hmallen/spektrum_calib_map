@@ -161,12 +161,36 @@ void setup() {
   int aux1Mid = (aux1Min + aux1Max) / 2;
 
   Serial.println(F("            Min - Mid - Max"));
+  // Aileron
   Serial.print(F("Aileron:  "));
+  Serial.print(aileMin); Serial.print(F(" - "));
+  Serial.print(aileMid); Serial.print(F(" - "));
+  Serial.println(aileMax);
+  // Elevator
   Serial.print(F("Elevator: "));
+  Serial.print(elevMin); Serial.print(F(" - "));
+  Serial.print(elevMid); Serial.print(F(" - "));
+  Serial.print(elevMax);
+  // Throttle
   Serial.print(F("Throttle: "));
+  Serial.print(throMin); Serial.print(F(" - "));
+  Serial.print(throMid); Serial.print(F(" - "));
+  Serial.println(throMax);
+  // Rudder
   Serial.print(F("Rudder:   "));
+  Serial.print(ruddMin); Serial.print(F(" - "));
+  Serial.print(ruddMid); Serial.print(F(" - "));
+  Serial.println(ruddMax);
+  // Gear
   Serial.print(F("Gear:     "));
+  Serial.print(gearMin); Serial.print(F(" - "));
+  Serial.print(gearMid); Serial.print(F(" - "));
+  Serial.println(gearMax);
+  // Aux1
   Serial.print(F("Aux1:     "));
+  Serial.print(aux1Min); Serial.print(F(" - "));
+  Serial.print(aux1Mid); Serial.print(F(" - "));
+  Serial.println(aux1Max);
 }
 
 void loop() {
