@@ -4,10 +4,21 @@
 */
 
 #include <CPPM.h>
+#include <EEPROM.h>
 
 #define UPDATE_TIMEOUT_SEC 10
 
+#define AILE_EEPROM 0
+#define ELEV_EEPROM 6
+#define RUDD_EEPROM 12
+#define THRO_EEPROM 18
+#define GEAR_EEPROM 24
+#define AUX1_EEPROM 30
+
 const int ppmPin = 8;
+
+int aile, elev, thro, rudd, gear, aux1;
+int aileMap, elevMap, throMap, gearMap, aux1Map;
 
 int aileMin = 9999;
 int aileMax = -9999;
@@ -29,19 +40,19 @@ bool calibrationComplete = false;
 void cppm_cycle(void) {
   if (CPPM.synchronized()) {
     //    // good for DX8-R615X
-    //    int aile = (CPPM.read(CPPM_AILE) - 1500*2) / 8 * 125 / 128; // aile -100% .. +100%
-    //    int elev = (CPPM.read(CPPM_ELEV) - 1500*2) / 8 * 125 / 128; // elevator -100% .. +100%
-    //    int thro = (CPPM.read(CPPM_THRO) - 1500*2) / 8 * 125 / 128; // throttle -100% .. +100%
-    //    int rudd = (CPPM.read(CPPM_RUDD) - 1500*2) / 8 * 125 / 128; // rudder -100% .. +100%
-    //    int gear = (CPPM.read(CPPM_GEAR) - 1500*2) / 8 * 125 / 128; // gear -100% .. +100%
-    //    int aux1 = (CPPM.read(CPPM_AUX1) - 1500*2) / 8 * 125 / 128; // flap -100% .. +100%
+    //    aile = (CPPM.read(CPPM_AILE) - 1500*2) / 8 * 125 / 128; // aile -100% .. +100%
+    //    elev = (CPPM.read(CPPM_ELEV) - 1500*2) / 8 * 125 / 128; // elevator -100% .. +100%
+    //    thro = (CPPM.read(CPPM_THRO) - 1500*2) / 8 * 125 / 128; // throttle -100% .. +100%
+    //    rudd = (CPPM.read(CPPM_RUDD) - 1500*2) / 8 * 125 / 128; // rudder -100% .. +100%
+    //    gear = (CPPM.read(CPPM_GEAR) - 1500*2) / 8 * 125 / 128; // gear -100% .. +100%
+    //    aux1 = (CPPM.read(CPPM_AUX1) - 1500*2) / 8 * 125 / 128; // flap -100% .. +100%
 
-    int aile = CPPM.read_us(CPPM_AILE) - 1500; // aileron
-    int elev = CPPM.read_us(CPPM_ELEV) - 1500; // elevator
-    int thro = CPPM.read_us(CPPM_THRO) - 1500; // throttle
-    int rudd = CPPM.read_us(CPPM_RUDD) - 1500; // rudder
-    int gear = CPPM.read_us(CPPM_GEAR) - 1500; // gear
-    int aux1 = CPPM.read_us(CPPM_AUX1) - 1500; // flap
+    aile = CPPM.read_us(CPPM_AILE) - 1500; // aileron
+    elev = CPPM.read_us(CPPM_ELEV) - 1500; // elevator
+    thro = CPPM.read_us(CPPM_THRO) - 1500; // throttle
+    rudd = CPPM.read_us(CPPM_RUDD) - 1500; // rudder
+    gear = CPPM.read_us(CPPM_GEAR) - 1500; // gear
+    aux1 = CPPM.read_us(CPPM_AUX1) - 1500; // flap
 
     /*Serial.print(aile); Serial.print(", ");
       Serial.print(elev); Serial.print(", ");
@@ -144,13 +155,22 @@ void cppm_cycle(void) {
 void setup() {
   Serial.begin(115200);
 
-  Serial.println(F("When program begins, move both sticks to their maximum positions in every direction."));
-  Serial.println(F("Program will automatically end once sufficient data is gathered."));
-  delay(5000);
-  Serial.println(F("Program starting...begin moving control sticks."));
+  Serial.println(F("When program begins, move sticks and aux switches/knobs to maxima in every direction."));
+  Serial.println(F("Press any key to begin."));
+  //delay(5000);
+  while (!Serial.available()) {
+    delay(1);
+  }
+  while (Serial.available()) {
+    char c = Serial.read();
+    delay(5);
+  }
+  Serial.println(F("Begin moving control sticks."));
   delay(1000);
 
   CPPM.begin();
+
+  updateLast = millis();
 
   while ((millis() - updateLast) < updateTimeout) {
     cppm_cycle();
@@ -158,7 +178,8 @@ void setup() {
   }
 
   Serial.println();
-  Serial.println(F("Data capture complete. Computing averages and create mapped output parameters."));
+  Serial.println(F("Data capture complete."));
+  Serial.println(F("Computing averages."));
   Serial.println();
 
   int aileMid = (aileMin + aileMax) / 2;
@@ -202,9 +223,68 @@ void setup() {
   Serial.print(aux1Mid); Serial.print(F(" - "));
   Serial.println(aux1Max);
 
-  Serial.println(F("Beginning output of mapped values (-100 <--> 100)."));
+  //Serial.println(F("Generating mapped output table."));
+
+  //
+
+  Serial.println(F("Save values to EEPROM? (y/N)"));
+
+  while (!Serial.available()) {
+    delay(1);
+  }
+  if (Serial.read() == 'y') {
+    // Save to EEPROM
+    Serial.print(F("Saving to EEPROM..."));
+    EEPROM.put(AILE_EEPROM, aileMin);
+    EEPROM.put((AILE_EEPROM + 2), aileMid);
+    EEPROM.put((AILE_EEPROM + 4), aileMax);
+    EEPROM.put(ELEV_EEPROM, elevMin);
+    EEPROM.put((ELEV_EEPROM + 2), elevMid);
+    EEPROM.put((ELEV_EEPROM + 4), elevMid);
+    EEPROM.put(RUDD_EEPROM, ruddMin);
+    EEPROM.put((RUDD_EEPROM + 2), ruddMid);
+    EEPROM.put((RUDD_EEPROM + 4), ruddMax);
+    EEPROM.put(THRO_EEPROM, throMin);
+    EEPROM.put((THRO_EEPROM + 2), throMid);
+    EEPROM.put((THRO_EEPROM + 4), throMax);
+    EEPROM.put(GEAR_EEPROM, gearMin);
+    EEPROM.put((GEAR_EEPROM + 2), gearMid);
+    EEPROM.put((GEAR_EEPROM + 4), gearMax);
+    EEPROM.put(AUX1_EEPROM, aux1Min);
+    EEPROM.put((AUX1_EEPROM + 2), aux1Mid);
+    EEPROM.put((AUX1_EEPROM + 4), aux1Max);
+    Serial.println(F("complete."));
+  }
+
+  Serial.println(F("Calibration complete."));
+  Serial.println();
+  delay(1000);
 }
 
 void loop() {
-  //
+  cppm_cycle();
+  mapSticks();
+
+  Serial.print(aileMap); Serial.print(F(" / "));
+  Serial.print(elevMap); Serial.print(F(" / "));
+  Serial.print(ruddMap); Serial.print(F(" / "));
+  Serial.print(throMap); Serial.print(F(" / "));
+  Serial.print(gearMap); Serial.print(F(" / "));
+  Serial.println(aux1Map);
+
+  delay(100); void mapSticks() {
+    aileMap = map(aile, aileMin, aileMax, -100, 100);
+    elevMap = map(elev, elevMin, elevMax, -100, 100);
+    ruddMap = map(rudd, ruddMin, ruddMax, -100, 100);
+    gearMap = map(gear, gearMin, gearMax, -100, 100);
+    aux1Map = map(aux1, aux1Min, aux1Max, -100, 100);
+  }
+}
+
+void mapSticks() {
+  aileMap = map(aile, aileMin, aileMax, -100, 100);
+  elevMap = map(elev, elevMin, elevMax, -100, 100);
+  ruddMap = map(rudd, ruddMin, ruddMax, -100, 100);
+  gearMap = map(gear, gearMin, gearMax, -100, 100);
+  aux1Map = map(aux1, aux1Min, aux1Max, -100, 100);
 }
