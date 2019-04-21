@@ -272,13 +272,7 @@ void loop() {
   Serial.print(gearMap); Serial.print(F(" / "));
   Serial.println(aux1Map);
 
-  delay(100); void mapSticks() {
-    aileMap = map(aile, aileMin, aileMax, -100, 100);
-    elevMap = map(elev, elevMin, elevMax, -100, 100);
-    ruddMap = map(rudd, ruddMin, ruddMax, -100, 100);
-    gearMap = map(gear, gearMin, gearMax, -100, 100);
-    aux1Map = map(aux1, aux1Min, aux1Max, -100, 100);
-  }
+  delay(100);
 }
 
 void mapSticks() {
